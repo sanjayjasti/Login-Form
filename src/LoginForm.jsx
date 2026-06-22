@@ -90,6 +90,8 @@ const styles = `
   }
   .lf-field:nth-child(1) { animation-delay: 0.1s; }
   .lf-field:nth-child(2) { animation-delay: 0.18s; }
+  .lf-field:nth-child(3) { animation-delay: 0.26s; }
+  .lf-field:nth-child(4) { animation-delay: 0.34s; }
 
   .lf-label {
     display: block;
@@ -233,6 +235,30 @@ const styles = `
 
   .lf-success-data span { color: #ff8c3c; }
 
+  .lf-toggle {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.12em;
+  }
+
+  .lf-toggle button {
+    border: none;
+    background: none;
+    color: #ff8c3c;
+    cursor: pointer;
+    font: inherit;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transition: color 0.2s ease;
+    padding: 0;
+  }
+
+  .lf-toggle button:hover {
+    color: #ffc48d;
+  }
+
   .lf-footer {
     margin-top: 24px;
     font-size: 10px;
@@ -254,24 +280,35 @@ const styles = `
   .lf-corner.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 `;
 
-function validate(username, email) {
+function validate({ mode, username, email, password, confirmPassword }) {
   const errors = {};
   if (!username.trim()) errors.username = "Username is required";
   else if (username.trim().length < 3) errors.username = "Min. 3 characters";
   if (!email.trim()) errors.email = "Email is required";
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "Enter a valid email";
+
+  if (mode === "register") {
+    if (!password) errors.password = "Password is required";
+    else if (password.length < 8) errors.password = "Min. 8 characters";
+    if (!confirmPassword) errors.confirmPassword = "Confirm your password";
+    else if (confirmPassword !== password) errors.confirmPassword = "Passwords must match";
+  }
+
   return errors;
 }
 
 export default function LoginForm() {
+  const [mode, setMode] = useState("login");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = () => {
-    const errs = validate(username, email);
+    const errs = validate({ mode, username, email, password, confirmPassword });
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
@@ -280,6 +317,14 @@ export default function LoginForm() {
       setLoading(false);
       setSubmitted(true);
     }, 1400);
+  };
+
+  const handleToggleMode = () => {
+    setMode((previous) => (previous === "login" ? "register" : "login"));
+    setErrors({});
+    setSubmitted(false);
+    setPassword("");
+    setConfirmPassword("");
   };
 
   return (
@@ -308,8 +353,14 @@ export default function LoginForm() {
           ) : (
             <>
               <div className="lf-tag">[ access portal ]</div>
-              <h1 className="lf-title">Sign <em>into</em><br />your account</h1>
-              <p className="lf-sub">Enter your credentials to continue →</p>
+              <h1 className="lf-title">
+                {mode === "login" ? "Sign <em>into</em><br />your account" : "Create <em>your</em><br />account"}
+              </h1>
+              <p className="lf-sub">
+                {mode === "login"
+                  ? "Enter your credentials to continue →"
+                  : "Register with a secure password to get started →"}
+              </p>
 
               <div className="lf-field">
                 <label className="lf-label">Username</label>
@@ -339,6 +390,38 @@ export default function LoginForm() {
                 {errors.email && <div className="lf-error">↑ {errors.email}</div>}
               </div>
 
+              {mode === "register" && (
+                <>
+                  <div className="lf-field">
+                    <label className="lf-label">Password</label>
+                    <div className="lf-input-wrap">
+                      <input
+                        className={`lf-input${errors.password ? " error" : ""}`}
+                        type="password"
+                        placeholder="At least 8 characters"
+                        value={password}
+                        onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: "" })); }}
+                      />
+                    </div>
+                    {errors.password && <div className="lf-error">↑ {errors.password}</div>}
+                  </div>
+
+                  <div className="lf-field">
+                    <label className="lf-label">Confirm Password</label>
+                    <div className="lf-input-wrap">
+                      <input
+                        className={`lf-input${errors.confirmPassword ? " error" : ""}`}
+                        type="password"
+                        placeholder="Repeat your password"
+                        value={confirmPassword}
+                        onChange={e => { setConfirmPassword(e.target.value); setErrors(p => ({ ...p, confirmPassword: "" })); }}
+                      />
+                    </div>
+                    {errors.confirmPassword && <div className="lf-error">↑ {errors.confirmPassword}</div>}
+                  </div>
+                </>
+              )}
+
               <div className="lf-divider" />
 
               <button
@@ -346,8 +429,20 @@ export default function LoginForm() {
                 onClick={handleSubmit}
                 disabled={loading}
               >
-                {loading ? "Authenticating..." : "Continue →"}
+                {loading ? (mode === "login" ? "Authenticating..." : "Registering...") : (mode === "login" ? "Continue →" : "Create account")}
               </button>
+
+              <div className="lf-toggle">
+                {mode === "login" ? (
+                  <>
+                    Not registered yet? <button type="button" onClick={handleToggleMode}>Create account</button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account? <button type="button" onClick={handleToggleMode}>Sign in</button>
+                  </>
+                )}
+              </div>
 
               <div className="lf-footer">
                 sys.v2.4.1 · secured connection · 2026
